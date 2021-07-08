@@ -1,7 +1,7 @@
 {
   "name": "bittorrent-protocol",
   "description": "Simple, robust, BitTorrent peer wire protocol implementation",
-  "version": "3.3.1",
+  "version": "3.4.2",
   "author": {
     "name": "WebTorrent LLC",
     "email": "feross@webtorrent.io",
@@ -15,13 +15,17 @@
     "bitfield": "^4.0.0",
     "debug": "^4.3.1",
     "randombytes": "^2.1.0",
+    "rc4": "^0.1.5",
     "readable-stream": "^3.6.0",
+    "simple-sha1": "^3.0.0",
     "speedometer": "^1.1.0",
     "unordered-array-remove": "^1.0.2"
   },
   "devDependencies": {
+    "@webtorrent/semantic-release-config": "1.0.5",
+    "semantic-release": "17.4.4",
     "standard": "*",
-    "tape": "^5.1.1"
+    "tape": "5.2.2"
   },
   "keywords": [
     "bittorrent",
@@ -55,5 +59,13 @@
       "type": "consulting",
       "url": "https://feross.org/support"
     }
-  ]
+  ],
+  "renovate": {
+    "extends": [
+      "github>webtorrent/renovate-config"
+    ]
+  },
+  "release": {
+    "extends": "@webtorrent/semantic-release-config"
+  }
 }
