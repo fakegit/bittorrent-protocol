@@ -1,5 +1,5 @@
-const Protocol = require('../')
-const test = require('tape')
+import test from 'tape'
+import Protocol from '../index.js'
 
 test('Handshake', t => {
   t.plan(4)
@@ -54,10 +54,6 @@ test('Asynchronous handshake + extended handshake', t => {
     if (ext === 'handshake') {
       eventLog.push('w1 ex')
       t.ok(obj)
-
-      // Last step: ensure handshakes came before extension protocol
-      t.deepEqual(eventLog, ['w2 hs', 'w1 hs', 'w2 ex', 'w1 ex'])
-      t.end()
     }
   })
 
@@ -68,7 +64,7 @@ test('Asynchronous handshake + extended handshake', t => {
     t.equal(extensions.extended, true)
 
     // Respond asynchronously
-    process.nextTick(() => {
+    queueMicrotask(() => {
       wire2.handshake(infoHash, peerId)
     })
   })
@@ -76,6 +72,12 @@ test('Asynchronous handshake + extended handshake', t => {
     if (ext === 'handshake') {
       eventLog.push('w2 ex')
       t.ok(obj)
+
+      queueMicrotask(() => {
+        // Last step: ensure handshakes came before extension protocol
+        t.deepEqual(eventLog, ['w2 hs', 'w1 hs', 'w1 ex', 'w2 ex'])
+        t.end()
+      })
     }
   })
 
@@ -145,7 +147,7 @@ test('Request a piece', t => {
     wire.request(0, 1, 11, (err, buffer) => {
       t.equal(wire.requests.length, 0)
       t.ok(!err)
-      t.equal(buffer.toString(), 'hello world')
+      t.equal(Buffer.from(buffer).toString(), 'hello world')
     })
     t.equal(wire.requests.length, 1)
   })
@@ -169,11 +171,11 @@ test('No duplicate `have` events for same piece', t => {
   t.equal(haveEvents, 0)
   t.equal(!!wire.peerPieces.get(0), false)
   wire.have(0)
-  process.nextTick(() => {
+  queueMicrotask(() => {
     t.equal(haveEvents, 1, 'emitted event for new piece')
     t.equal(!!wire.peerPieces.get(0), true)
     wire.have(0)
-    process.nextTick(() => {
+    queueMicrotask(() => {
       t.equal(haveEvents, 1, 'not emitted event for preexisting piece')
       t.equal(!!wire.peerPieces.get(0), true)
     })
@@ -198,7 +200,7 @@ test('Fast Extension: handshake when unsupported', t => {
   wire2.on('handshake', (infoHash, peerId, extensions) => {
     t.equal(extensions.fast, true)
     // Respond asynchronously
-    process.nextTick(() => {
+    queueMicrotask(() => {
       wire2.handshake(infoHash, peerId, { fast: false }) // no support
     })
   })
@@ -224,7 +226,7 @@ test('Fast Extension: handshake when supported', t => {
   wire2.on('handshake', (infoHash, peerId, extensions) => {
     t.equal(extensions.fast, true)
     // Respond asynchronously
-    process.nextTick(() => {
+    queueMicrotask(() => {
       wire2.handshake(infoHash, peerId, { fast: true })
     })
   })
@@ -351,6 +353,43 @@ test('Fast Extension: reject on choke', t => {
 
   wire.on('reject', () => {
     t.equal(wire.requests.length, 0)
+  })
+
+  wire.handshake(Buffer.from('01234567890123456789'), Buffer.from('12345678901234567890'), { fast: true })
+})
+
+test('Fast Extension: don\'t reject allowed-fast on choke', t => {
+  t.plan(11)
+
+  const wire = new Protocol()
+  wire.on('error', err => { t.fail(err) })
+  wire.pipe(wire)
+
+  wire.once('handshake', (infoHash, peerId, extensions) => {
+    t.equal(wire.extensions.fast, true)
+    t.equal(wire.peerExtensions.fast, true)
+    t.equal(wire.hasFast, true)
+    wire.allowedFast(6)
+    wire.unchoke()
+  })
+
+  wire.once('unchoke', () => {
+    t.equal(wire.requests.length, 0)
+    wire.request(6, 66, 666, (err, buffer) => {
+      t.fail(err)
+    })
+    t.equal(wire.requests.length, 1)
+    t.equal(wire.peerRequests.length, 0)
+  })
+
+  wire.on('request', (i, offset, length, callback) => {
+    t.equal(wire.peerRequests.length, 1)
+    t.equal(i, 6)
+    t.equal(offset, 66)
+    t.equal(length, 666)
+
+    wire.choke()
+    t.equal(wire.peerRequests.length, 1) // NOT rejected
   })
 
   wire.handshake(Buffer.from('01234567890123456789'), Buffer.from('12345678901234567890'), { fast: true })

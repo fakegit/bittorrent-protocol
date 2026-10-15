@@ -1,31 +1,40 @@
 {
   "name": "bittorrent-protocol",
+  "type": "module",
   "description": "Simple, robust, BitTorrent peer wire protocol implementation",
-  "version": "3.5.1",
+  "version": "5.0.9",
   "author": {
     "name": "WebTorrent LLC",
     "email": "feross@webtorrent.io",
     "url": "https://webtorrent.io"
   },
+  "browser": {
+    "./mse.js": false
+  },
   "bugs": {
     "url": "https://github.com/webtorrent/bittorrent-protocol/issues"
   },
   "dependencies": {
-    "bencode": "^2.0.2",
-    "bitfield": "^4.0.0",
-    "debug": "^4.3.3",
-    "randombytes": "^2.1.0",
-    "rc4": "^0.1.5",
-    "readable-stream": "^3.6.0",
-    "simple-sha1": "^3.1.0",
-    "speedometer": "^1.1.0",
+    "bencode": "^4.0.1",
+    "bitfield": "^5.0.1",
+    "debug": "^4.4.3",
+    "streamx": "^2.28.0",
+    "throughput": "^1.0.2",
+    "uint8-util": "^2.3.2",
     "unordered-array-remove": "^1.0.2"
   },
   "devDependencies": {
-    "@webtorrent/semantic-release-config": "1.0.7",
-    "semantic-release": "19.0.2",
+    "@webtorrent/semantic-release-config": "1.0.11",
+    "semantic-release": "25.0.9",
     "standard": "*",
-    "tape": "5.5.2"
+    "tap-spec": "^5.0.0",
+    "tape": "5.10.3"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "exports": {
+    "import": "./index.js"
   },
   "keywords": [
     "bittorrent",
@@ -38,13 +47,14 @@
     "wire"
   ],
   "license": "MIT",
-  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/webtorrent/bittorrent-protocol.git"
   },
   "scripts": {
-    "test": "standard && tape test/*.js"
+    "test": "standard && tape test/*.js | tap-spec",
+    "perf": "node perf/crypto.js | tap-spec",
+    "perf:native": "node --openssl-legacy-provider perf/crypto.js | tap-spec"
   },
   "funding": [
     {
